@@ -1,43 +1,99 @@
-<!DOCTYPE html>
-<!-- saved from url=(0147)file:///C:/Users/tinbu/Downloads/%E6%95%99%E6%9D%90%E5%9B%B3_%E5%BF%A0%E5%AE%9F%E3%82%AB%E3%83%A9%E3%83%BC%E5%8C%96%E3%83%84%E3%83%BC%E3%83%AB.html -->
-<html lang="ja"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>教材図・忠実カラー化ツール</title>
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>教材図AI編集ツール</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js"></script>
 <style>
-:root{--blue:#1769e0;--green:#258a48;--red:#d93025;--line:#cfd8e3;--bg:#f4f7fb}*{box-sizing:border-box}body{margin:0;font-family:"Yu Gothic","Meiryo",sans-serif;background:var(--bg);color:#172033}header{background:#fff;border-bottom:1px solid var(--line);padding:14px 20px}h1{font-size:22px;margin:0 0 4px}header p{margin:0;color:#5d6675;font-size:14px}main{display:grid;grid-template-columns:340px 1fr;gap:14px;padding:14px;min-height:calc(100vh - 78px)}.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:0 2px 8px #0000000d}label{font-weight:700;font-size:14px}input[type=file]{width:100%;margin:8px 0 10px}.row{display:grid;grid-template-columns:105px 1fr 46px;gap:8px;align-items:center;margin:8px 0}input[type=range]{width:100%}button{border:0;border-radius:8px;padding:9px 11px;font-weight:700;cursor:pointer}.primary{background:var(--blue);color:#fff}.green{background:var(--green);color:#fff}.gray{background:#e9edf3;color:#1d2735}.red{background:var(--red);color:#fff}button:disabled{opacity:.45;cursor:not-allowed}.help,.notice{font-size:13px;line-height:1.6;padding:10px;border-radius:8px}.help{background:#f6f8fa;color:#52606f}.notice{background:#fff7d6;color:#604600;margin-top:10px}.tabs{display:flex;gap:6px;margin:10px 0}.tab{flex:1}.tab.on{background:var(--blue);color:#fff}#workspace{overflow:auto}.stage{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}.view h3{font-size:14px;margin:0 0 6px}.canvasBox{background:#ddd;border:1px solid var(--line);overflow:auto;max-height:75vh}canvas{display:block;max-width:100%;height:auto;background:#fff}.swatches{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:7px 0}.swatch{height:34px;border-radius:7px;border:2px solid #fff;outline:1px solid #aeb8c5}.swatch.active{outline:3px solid var(--blue)}.toolrow{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0}.small{font-size:12px;color:#697386}@media(max-width:950px){main{grid-template-columns:1fr}.stage{grid-template-columns:1fr}}
-</style></head><body>
-<header><h1>教材図・忠実カラー化ツール</h1><p>原図の座標・線・文字・指示線を動かさず、明るさ調整と手動着色だけを行います。</p></header>
-<main><section class="panel">
-<label>1. 原図を読み込む</label><input id="file" type="file" accept="image/png,image/jpeg,image/webp">
-<div class="help"><b>このツールが守ること</b><br>・画像サイズと全要素の座標を変更しません。<br>・地図、指示線、矢印、四角、文字を描き直しません。<br>・元画像の画素に対して、明るさ・白背景化・色付けのみを行います。</div>
-<div class="tabs"><button id="autoTab" class="tab on">自動補正</button><button id="paintTab" class="tab gray">部分着色</button></div>
-<div id="autoPanel">
+body{margin:0;font-family:"BIZ UDPGothic",sans-serif;background:#f4f7fb;color:#172033}
+header{background:#fff;padding:14px 20px;border-bottom:1px solid #ccd5df}
+main{display:grid;grid-template-columns:360px 1fr;gap:14px;padding:14px}
+.panel{background:#fff;border:1px solid #ccd5df;border-radius:12px;padding:14px}
+canvas{max-width:100%;height:auto;background:#fff}
+.stage{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{padding:9px 11px;border:0;border-radius:8px;font-weight:700;cursor:pointer}
+.primary{background:#1769e0;color:#fff}.green{background:#258a48;color:#fff}.gray{background:#e8edf3}.red{background:#d93025;color:#fff}
+.row{display:grid;grid-template-columns:110px 1fr 45px;gap:8px;align-items:center;margin:8px 0}
+.tabs,.tools{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.tab{flex:1}.on{background:#1769e0;color:#fff}
+.help,.notice{font-size:13px;line-height:1.6;padding:10px;border-radius:8px}
+.help{background:#f6f8fa}.notice{background:#fff7d6}
+.colors{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.color{height:34px;border:2px solid white;outline:1px solid #aaa}.color.on{outline:3px solid #1769e0}
+#ocrList{max-height:260px;overflow:auto}
+.ocr{display:grid;grid-template-columns:1fr auto;gap:8px;padding:5px 0}
+.ocr input[type=text]{width:100%;font-family:"BIZ UDPGothic"}
+@media(max-width:980px){main{grid-template-columns:1fr}.stage{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>教材図AI編集ツール</h1><p>原図の座標を保持しながら、領域着色・OCR・BIZ UDPゴシック置換を行います。</p></header>
+<main>
+<section class="panel">
+<input id="file" type="file" accept="image/png,image/jpeg,image/webp">
+<div class="help">原図の線や配置は動かさず、画像の上に編集結果を重ねます。海などの領域はクリック着色、文字はOCR後に置き換えます。</div>
+<div class="tabs">
+<button id="toneTab" class="tab on">色調</button>
+<button id="fillTab" class="tab gray">領域着色</button>
+<button id="textTab" class="tab gray">文字置換</button>
+</div>
+<div id="tonePanel">
 <div class="row"><label>明るさ</label><input id="brightness" type="range" min="70" max="160" value="112"><span id="brightnessV">112</span></div>
 <div class="row"><label>コントラスト</label><input id="contrast" type="range" min="70" max="180" value="118"><span id="contrastV">118</span></div>
 <div class="row"><label>彩度</label><input id="saturation" type="range" min="0" max="180" value="108"><span id="saturationV">108</span></div>
-<div class="row"><label>白背景化</label><input id="whiteLevel" type="range" min="0" max="100" value="45"><span id="whiteLevelV">45</span></div>
-<div class="row"><label>線の強調</label><input id="inkLevel" type="range" min="0" max="100" value="18"><span id="inkLevelV">18</span></div>
-<div class="toolrow"><button id="presetDoc" class="gray">白黒原図向け</button><button id="presetColor" class="gray">カラー原図向け</button><button id="reset" class="gray">初期値</button></div>
+<div class="tools"><button id="bw" class="gray">白黒原図向け</button><button id="colorPreset" class="gray">カラー原図向け</button></div>
 </div>
-<div id="paintPanel" style="display:none"><div class="small">原図上をなぞって色を重ねます。線や形は移動しません。</div><div class="swatches" id="swatches"><button class="swatch active" style="background: rgb(143, 211, 255);"></button><button class="swatch" style="background: rgb(168, 230, 163);"></button><button class="swatch" style="background: rgb(255, 224, 138);"></button><button class="swatch" style="background: rgb(255, 179, 179);"></button><button class="swatch" style="background: rgb(215, 182, 255);"></button><button class="swatch" style="background: rgb(255, 196, 138);"></button><button class="swatch" style="background: rgb(183, 236, 236);"></button><button class="swatch" style="background: rgb(230, 214, 184);"></button><button class="swatch" style="background: rgb(245, 167, 208);"></button><button class="swatch" style="background: rgb(255, 255, 255);"></button></div>
-<div class="row"><label>筆の太さ</label><input id="brushSize" type="range" min="4" max="100" value="28"><span id="brushSizeV">28</span></div>
-<div class="row"><label>色の濃さ</label><input id="opacity" type="range" min="5" max="70" value="28"><span id="opacityV">28</span></div>
-<div class="toolrow"><button id="brush" class="primary">筆</button><button id="eraser" class="gray">消しゴム</button><button id="undo" class="gray">1つ戻す</button><button id="clearPaint" class="red">着色を消す</button></div></div>
-<div class="toolrow" style="margin-top:14px"><button id="saveOriginal" class="green" disabled="">原図を保存</button><button id="saveResult" class="primary" disabled="">説明図を保存</button></div>
-<div class="notice">完全な「描き直し」ではなく、原図を画素単位で保持する方式です。そのため、線の着地点や文字配置がずれません。</div>
+<div id="fillPanel" style="display:none">
+<div class="colors" id="colors"></div>
+<div class="row"><label>許容値</label><input id="tolerance" type="range" min="5" max="80" value="28"><span id="toleranceV">28</span></div>
+<div class="row"><label>濃さ</label><input id="alpha" type="range" min="10" max="100" value="55"><span id="alphaV">55</span></div>
+<div class="tools"><button id="undo" class="gray">1つ戻す</button><button id="clearFill" class="red">着色を消す</button></div>
+<div class="notice">右側の編集後画像で、海などの閉じた領域をクリックしてください。</div>
+</div>
+<div id="textPanel" style="display:none">
+<div class="tools"><button id="ocr" class="primary" disabled>OCR実行</button><button id="applyText" class="green" disabled>BIZ UDPへ置換</button><button id="clearText" class="red">文字置換を消す</button></div>
+<div id="status">未実行</div><div id="ocrList"></div>
+</div>
+<div class="tools"><button id="save" class="primary" disabled>PNG保存</button><button id="reset" class="gray" disabled>原図からやり直す</button></div>
 </section>
-<section id="workspace" class="panel"><div id="empty">左側から原図を読み込んでください。</div><div id="stage" class="stage" style="display:none"><div class="view"><h3>原図</h3><div class="canvasBox"><canvas id="source"></canvas></div></div><div class="view"><h3>説明図（補正後）</h3><div class="canvasBox"><canvas id="result"></canvas></div></div></div></section></main>
+<section class="panel">
+<div id="empty">原図を読み込んでください。</div>
+<div id="stage" class="stage" style="display:none">
+<div><h3>原図</h3><canvas id="src"></canvas></div>
+<div><h3>編集後</h3><canvas id="dst"></canvas></div>
+</div>
+</section>
+</main>
 <script>
-const $=id=>document.getElementById(id),file=$('file'),source=$('source'),result=$('result'),sctx=source.getContext('2d',{willReadFrequently:true}),rctx=result.getContext('2d',{willReadFrequently:true}),stage=$('stage'),empty=$('empty');let img=new Image(),originalName='教材図',baseData=null,paintCanvas=document.createElement('canvas'),pctx=paintCanvas.getContext('2d'),drawing=false,last=null,tool='brush',history=[],selectedColor='#8fd3ff';
-['brightness','contrast','saturation','whiteLevel','inkLevel','brushSize','opacity'].forEach(id=>{const el=$(id),v=$(id+'V');el.oninput=()=>{v.textContent=el.value;if(['brightness','contrast','saturation','whiteLevel','inkLevel'].includes(id))render()}});
-file.onchange=e=>{const f=e.target.files[0];if(!f)return;originalName=f.name.replace(/\.[^.]+$/,'');const u=URL.createObjectURL(f);img.onload=()=>{source.width=result.width=paintCanvas.width=img.naturalWidth;source.height=result.height=paintCanvas.height=img.naturalHeight;sctx.drawImage(img,0,0);baseData=sctx.getImageData(0,0,source.width,source.height);pctx.clearRect(0,0,paintCanvas.width,paintCanvas.height);history=[];stage.style.display='grid';empty.style.display='none';$('saveOriginal').disabled=$('saveResult').disabled=false;render();URL.revokeObjectURL(u)};img.src=u};
-const clamp=v=>Math.max(0,Math.min(255,v));
-function render(){if(!baseData)return;const b=+$('brightness').value/100,c=+$('contrast').value/100,s=+$('saturation').value/100,wv=+$('whiteLevel').value/100,ink=+$('inkLevel').value/100,out=new ImageData(new Uint8ClampedArray(baseData.data),baseData.width,baseData.height),d=out.data;for(let i=0;i<d.length;i+=4){let R=d[i],G=d[i+1],B=d[i+2],L=.299*R+.587*G+.114*B;R=L+(R-L)*s;G=L+(G-L)*s;B=L+(B-L)*s;R=((R-128)*c+128)*b;G=((G-128)*c+128)*b;B=((B-128)*c+128)*b;L=.299*R+.587*G+.114*B;const w=Math.max(0,(L-175)/80)*wv;R+= (255-R)*w;G+=(255-G)*w;B+=(255-B)*w;const k=Math.max(0,(135-L)/135)*ink;d[i]=clamp(R*(1-k));d[i+1]=clamp(G*(1-k));d[i+2]=clamp(B*(1-k))}rctx.putImageData(out,0,0);rctx.save();rctx.globalCompositeOperation='multiply';rctx.drawImage(paintCanvas,0,0);rctx.restore()}
-function setVals(o){for(const[k,v]of Object.entries(o)){$(k).value=v;$(k+'V').textContent=v}render()}
-$('presetDoc').onclick=()=>setVals({brightness:118,contrast:132,saturation:75,whiteLevel:68,inkLevel:28});$('presetColor').onclick=()=>setVals({brightness:108,contrast:112,saturation:118,whiteLevel:24,inkLevel:10});$('reset').onclick=()=>setVals({brightness:112,contrast:118,saturation:108,whiteLevel:45,inkLevel:18});
-$('autoTab').onclick=()=>{$('autoPanel').style.display='block';$('paintPanel').style.display='none';$('autoTab').className='tab on';$('paintTab').className='tab gray'};$('paintTab').onclick=()=>{$('autoPanel').style.display='none';$('paintPanel').style.display='block';$('paintTab').className='tab on';$('autoTab').className='tab gray'};
-['#8fd3ff','#a8e6a3','#ffe08a','#ffb3b3','#d7b6ff','#ffc48a','#b7ecec','#e6d6b8','#f5a7d0','#ffffff'].forEach((col,i)=>{const b=document.createElement('button');b.className='swatch'+(i===0?' active':'');b.style.background=col;b.onclick=()=>{selectedColor=col;[...$('swatches').children].forEach(x=>x.classList.remove('active'));b.classList.add('active')};$('swatches').appendChild(b)});
-function point(e){const r=result.getBoundingClientRect();return{x:(e.clientX-r.left)*result.width/r.width,y:(e.clientY-r.top)*result.height/r.height}}
-function snapshot(){history.push(pctx.getImageData(0,0,paintCanvas.width,paintCanvas.height));if(history.length>20)history.shift()}
-result.onpointerdown=e=>{if($('paintPanel').style.display==='none')return;snapshot();drawing=true;last=point(e);result.setPointerCapture(e.pointerId)};result.onpointermove=e=>{if(!drawing)return;const q=point(e);pctx.save();pctx.lineCap='round';pctx.lineJoin='round';pctx.lineWidth=+$('brushSize').value;if(tool==='eraser'){pctx.globalCompositeOperation='destination-out';pctx.strokeStyle='#000';pctx.globalAlpha=1}else{pctx.globalCompositeOperation='source-over';pctx.strokeStyle=selectedColor;pctx.globalAlpha=+$('opacity').value/100}pctx.beginPath();pctx.moveTo(last.x,last.y);pctx.lineTo(q.x,q.y);pctx.stroke();pctx.restore();last=q;render()};result.onpointerup=()=>{drawing=false;last=null};
-$('brush').onclick=()=>{tool='brush';$('brush').className='primary';$('eraser').className='gray'};$('eraser').onclick=()=>{tool='eraser';$('eraser').className='primary';$('brush').className='gray'};$('undo').onclick=()=>{if(history.length){pctx.putImageData(history.pop(),0,0);render()}};$('clearPaint').onclick=()=>{if(confirm('部分着色をすべて消しますか？')){snapshot();pctx.clearRect(0,0,paintCanvas.width,paintCanvas.height);render()}};
-function save(c,n){c.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)},'image/png')}$('saveOriginal').onclick=()=>save(source,originalName+'_原図.png');$('saveResult').onclick=()=>save(result,originalName+'_説明図.png');
-</script></body></html>
+const $=id=>document.getElementById(id);
+const src=$('src'),dst=$('dst'),sctx=src.getContext('2d',{willReadFrequently:true}),dctx=dst.getContext('2d',{willReadFrequently:true});
+const fill=document.createElement('canvas'),fctx=fill.getContext('2d',{willReadFrequently:true});
+const text=document.createElement('canvas'),tctx=text.getContext('2d');
+let img=new Image(),base=null,name='教材図',mode='tone',history=[],ocrWords=[],selected=[151,211,255];
+['brightness','contrast','saturation','tolerance','alpha'].forEach(id=>$(id).oninput=()=>{$(id+'V').textContent=$(id).value;if(['brightness','contrast','saturation'].includes(id))render()});
+$('file').onchange=e=>{const f=e.target.files[0];if(!f)return;name=f.name.replace(/\.[^.]+$/,'');const u=URL.createObjectURL(f);img.onload=()=>{src.width=dst.width=fill.width=text.width=img.naturalWidth;src.height=dst.height=fill.height=text.height=img.naturalHeight;sctx.drawImage(img,0,0);base=sctx.getImageData(0,0,src.width,src.height);fctx.clearRect(0,0,fill.width,fill.height);tctx.clearRect(0,0,text.width,text.height);$('stage').style.display='grid';$('empty').style.display='none';$('ocr').disabled=$('save').disabled=$('reset').disabled=false;render();URL.revokeObjectURL(u)};img.src=u};
+function clamp(v){return Math.max(0,Math.min(255,v))}
+function render(){if(!base)return;const b=+$('brightness').value/100,c=+$('contrast').value/100,s=+$('saturation').value/100;const out=new ImageData(new Uint8ClampedArray(base.data),base.width,base.height),d=out.data;for(let i=0;i<d.length;i+=4){let R=d[i],G=d[i+1],B=d[i+2],L=.299*R+.587*G+.114*B;R=L+(R-L)*s;G=L+(G-L)*s;B=L+(B-L)*s;d[i]=clamp(((R-128)*c+128)*b);d[i+1]=clamp(((G-128)*c+128)*b);d[i+2]=clamp(((B-128)*c+128)*b)}dctx.putImageData(out,0,0);dctx.drawImage(fill,0,0);dctx.drawImage(text,0,0)}
+function tab(n){mode=n;['tone','fill','text'].forEach(x=>{$(x+'Panel').style.display=x===n?'block':'none';$(x+'Tab').className='tab '+(x===n?'on':'gray')})}
+$('toneTab').onclick=()=>tab('tone');$('fillTab').onclick=()=>tab('fill');$('textTab').onclick=()=>tab('text');
+$('bw').onclick=()=>{brightness.value=118;contrast.value=130;saturation.value=80;['brightness','contrast','saturation'].forEach(id=>$(id+'V').textContent=$(id).value);render()};
+$('colorPreset').onclick=()=>{brightness.value=108;contrast.value=112;saturation.value=120;['brightness','contrast','saturation'].forEach(id=>$(id+'V').textContent=$(id).value);render()};
+const palette=[[151,211,255],[174,230,166],[255,224,138],[255,185,185],[215,190,255],[255,202,142],[183,236,236],[235,220,190]];
+palette.forEach((c,i)=>{const b=document.createElement('button');b.className='color'+(i===0?' on':'');b.style.background=`rgb(${c})`;b.onclick=()=>{selected=c;[...$('colors').children].forEach(x=>x.classList.remove('on'));b.classList.add('on')};$('colors').appendChild(b)});
+function pt(e){const r=dst.getBoundingClientRect();return{x:Math.floor((e.clientX-r.left)*dst.width/r.width),y:Math.floor((e.clientY-r.top)*dst.height/r.height)}}
+dst.onclick=e=>{if(mode!=='fill'||!base)return;history.push(fctx.getImageData(0,0,fill.width,fill.height));flood(pt(e));render()};
+function flood(p){const image=dctx.getImageData(0,0,dst.width,dst.height),bd=image.data,layer=fctx.getImageData(0,0,fill.width,fill.height),ld=layer.data,w=dst.width,h=dst.height,i0=(p.y*w+p.x)*4,target=[bd[i0],bd[i0+1],bd[i0+2]],tol=+$('tolerance').value,a=Math.round(255*(+$('alpha').value/100)),seen=new Uint8Array(w*h),stack=[p.x,p.y];while(stack.length){const y=stack.pop(),x=stack.pop();if(x<0||y<0||x>=w||y>=h)continue;const n=y*w+x;if(seen[n])continue;seen[n]=1;const i=n*4;if(Math.abs(bd[i]-target[0])>tol||Math.abs(bd[i+1]-target[1])>tol||Math.abs(bd[i+2]-target[2])>tol)continue;ld[i]=selected[0];ld[i+1]=selected[1];ld[i+2]=selected[2];ld[i+3]=a;stack.push(x+1,y,x-1,y,x,y+1,x,y-1)}fctx.putImageData(layer,0,0)}
+$('undo').onclick=()=>{if(history.length){fctx.putImageData(history.pop(),0,0);render()}};
+$('clearFill').onclick=()=>{fctx.clearRect(0,0,fill.width,fill.height);history=[];render()};
+$('ocr').onclick=async()=>{ocr.disabled=true;status.textContent='OCR処理中…';try{const worker=await Tesseract.createWorker('jpn');const ret=await worker.recognize(src);await worker.terminate();ocrWords=(ret.data.words||[]).filter(w=>w.text&&w.text.trim()&&w.confidence>25);$('ocrList').innerHTML='';ocrWords.forEach(w=>{w.enabled=true;const d=document.createElement('div');d.className='ocr';const input=document.createElement('input');input.type='text';input.value=w.text.trim();input.oninput=()=>w.text=input.value;const cb=document.createElement('input');cb.type='checkbox';cb.checked=true;cb.onchange=()=>w.enabled=cb.checked;d.append(input,cb);$('ocrList').appendChild(d)});applyText.disabled=ocrWords.length===0;status.textContent=`${ocrWords.length}個の文字領域を検出しました。`}catch(e){status.textContent='OCR失敗: '+e.message}finally{ocr.disabled=false}};
+$('applyText').onclick=()=>{tctx.clearRect(0,0,text.width,text.height);ocrWords.forEach(w=>{if(!w.enabled)return;const b=w.bbox,W=b.x1-b.x0,H=b.y1-b.y0;tctx.fillStyle='#fff';tctx.fillRect(b.x0,b.y0,W,H);let fs=Math.max(8,H*.82);tctx.font=`${fs}px "BIZ UDPGothic"`;while(tctx.measureText(w.text).width>W*.98&&fs>7){fs--;tctx.font=`${fs}px "BIZ UDPGothic"`}tctx.fillStyle='#111';tctx.textAlign='center';tctx.textBaseline='middle';tctx.fillText(w.text,b.x0+W/2,b.y0+H/2)});render()};
+$('clearText').onclick=()=>{tctx.clearRect(0,0,text.width,text.height);render()};
+$('reset').onclick=()=>{fctx.clearRect(0,0,fill.width,fill.height);tctx.clearRect(0,0,text.width,text.height);history=[];render()};
+$('save').onclick=()=>dst.toBlob(blob=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name+'_教材説明図.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)},'image/png');
+</script>
+</body>
+</html>
